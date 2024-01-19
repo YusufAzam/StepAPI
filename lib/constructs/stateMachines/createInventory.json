@@ -1,0 +1,56 @@
+{
+    "Comment": "Creates a request (POST)",
+    "StartAt": "DynamoDB GetItem",
+    "States": {
+      "DynamoDB GetItem": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::dynamodb:getItem",
+        "Parameters": {
+          "TableName": "playerTable",
+          "Key": {
+            "playerId": {
+              "S.$": "$.playerId"
+            },
+            "entity": {
+              "S.$": "$.entity"
+            }
+          }
+        },
+        "Next": "Write new Item or Error",
+        "ResultPath": "$.request"
+      },
+      "Write new Item or Error": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Not": {
+              "Variable": "$.request.Item",
+              "IsPresent": true
+            },
+            "Next": "DynamoDB PutItem"
+          }
+        ],
+        "Default": "Fail"
+      },
+      "DynamoDB PutItem": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::dynamodb:putItem",
+        "Parameters": {
+          "TableName": "playerTable",
+          "Item": {
+            "playerId": {
+              "S.$": "$.playerId"
+            },
+            "entity": {
+              "S.$": "$.entity"
+            }
+          }
+        },
+        "End": true
+      },
+      "Fail": {
+        "Type": "Fail",
+        "Error": "Duplicate Request"
+      }
+    }
+  }
